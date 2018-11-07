@@ -12,6 +12,10 @@ function preload(){
   game.load.image('furryPatker', 'sprites/furryPatker.png');
   game.load.image('ogrePatker', 'sprites/ogrePatker.png');
   game.load.image('fancyPatker', 'sprites/fancyPatker.png');
+  game.load.image('crazyPatkerRestored', 'sprites/crazyPatkerRestored.png');
+  game.load.image('ball', 'sprites/ball.png');
+
+  game.load.spritesheet('crazyPatker', 'sprites/sheets/sheet_crazyPatker.png', 32, 64, 2);
 }
 
 let map;
@@ -68,6 +72,9 @@ function create(){
   player.collisions = [];
   player.cutscene = false;
 
+  ball = game.add.sprite(500, 350, 'ball');
+  game.physics.p2.enable(ball);
+
   furryPatker = game.add.sprite(300, 300, 'furryPatker');
   player.furryPatkerD = 0;
 
@@ -77,8 +84,13 @@ function create(){
   fancyPatker = game.add.sprite(450, 100, 'fancyPatker');
   player.fancyPatkerD = 0;
 
-  colliders = [furryPatker, ogrePatker, fancyPatker];
-  colliders.forEach(i => {
+  crazyPatker = game.add.sprite(900, 200, 'crazyPatker');
+  let idle = crazyPatker.animations.add('idle');
+  crazyPatker.animations.play('idle', 2, true);
+  player.crazyPatkerD = 0;
+
+  staticColliders = [furryPatker, ogrePatker, fancyPatker, crazyPatker];
+  staticColliders.forEach(i => {
     game.physics.p2.enable(i);
     i.body.static = true;
     player.body.createBodyCallback(i, function(){
@@ -86,6 +98,12 @@ function create(){
       player.collisions.push(i)
      }, this);
   });
+
+  crazyPatker.body.createBodyCallback(ball, function(){
+    player.crazyPatkerD = 1;
+    crazyPatker.animations.stop('idle');
+    crazyPatker.loadTexture('crazyPatkerRestored');
+  }, this);
 
   dialogueText = game.add.text(10, 500, "", {fill: "#ffffff", align: "center"});
   dialogueText.fixedToCamera = true;
@@ -104,6 +122,7 @@ function create(){
 }
 
 function update(){
+  crazyPatker.body.width = 20;
   player.body.setZeroVelocity();
   player.body.angle = 0;
   player.vel = 200
@@ -147,6 +166,21 @@ function update(){
           });
         }
       }
+      else if(player.collisions.indexOf(crazyPatker) != -1){
+        player.cutscene = true;
+        if(player.crazyPatkerD == 0){
+          dialogueString(['Hit...', 'With...', 'Ball...'], () => {
+            player.cutscene = false;
+            player.collisiions = [];
+          });
+        }
+        else if(player.crazyPatkerD == 1){
+          dialogueString(['Oh! Thank Patker!', 'You have rescued me from the sp00ky ball curse!', 'How can I ever repay you!'], () => {
+            player.cutscene = false;
+            player.collisiions = [];
+          });
+        }
+      }
     }
     keys.cd = 10;
   }
@@ -158,5 +192,5 @@ function update(){
 }
 
 function render(){
-  game.debug.spriteInfo(player, 32, 32);
+  // game.debug.spriteInfo(player, 32, 32);
 }
