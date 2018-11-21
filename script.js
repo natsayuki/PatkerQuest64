@@ -28,10 +28,24 @@ let cursors;
 let player;
 let keys = {};
 let dialogueText;
-let menuBackground;
-let menuCursor;
-let itemsText;
-let questsText;
+
+let quests = {
+  'Destroy Da Sp00ky Ball': 0
+}
+
+class Character{
+  constructor(name, sprite, pos){
+    this.dialogue = 0;
+    this.sprite = game.add.sprite(pos[0], pos[1], sprite);
+    game.physics.p2.enable(this.sprite);
+    this.sprite.body.static = true;
+    player.body.createBodyCallback(this.sprite, function(){
+      player.collisions = [];
+      player.collisions.push(this);
+     }, this);
+  }
+
+}
 
 class Menu{
   constructor(items){
@@ -110,6 +124,31 @@ class Menu{
   }
 }
 
+class List{
+  constructor(list){
+    this.list = list;
+    this.length = Object.keys(this.list).length;
+    this.page = 0;
+    this.pages = {}
+    let curr = 0;
+    let page = 0
+    Object.keys(this.list).forEach(quest => {
+      if(curr == 5){
+        curr = 0;
+        page++;
+      }
+      if(curr == 0) this.pages[curr] = [];
+      this.pages[curr].push(this.list[curr])
+    });
+  }
+  showPage(num){
+
+  }
+  show(){
+
+  }
+}
+
 function say(text, callback, start){
   start = start || '';
   if(text.length > start.length + 1) player.typing = true;
@@ -150,7 +189,7 @@ function startQuest(quest){
     player.collisions = [];
   });
   dialogueText.addColor('#ffff00', 8);
-  player.quests.push(quest);
+  player.quests[quest] = 1;
 }
 
 function openMenu(){
@@ -182,38 +221,43 @@ function create(){
   game.physics.p2.enable(player);
   player.collisions = [];
   player.cutscene = false;
-  player.quests = {};
+  player.quests = {
+    'Destroy Da Sp00ky Ball': 0
+  }
+  player.questGuides = {
+    'Destroy Da Sp00ky Ball': [
+      'Start the quest by speaking to Baby Patker after freeing Crazy Patker from the sp00ky ball curse',
+      'Find Wizard Patker and talk to him about the best way to destroy the sp00ky ball.',
+      'Go to the grave of Gladiator Patker and read the instructions to destroy the sp00ky ball.',
+      'Get a Patker Flower',
+      'Get a Patker Shroom',
+      'Get a Patker Root',
+      'Take the ingrediants back to Wizard Patker',
+      'Talk to Baker Patker to see if he has a spoon',
+      'Take the spoon to Wizard Patker',
+      'Take the sp00ky ball to Wizard Patker'
+    ]
+  }
+  player.questGuide = (quest) => {
+    return player.questGuides[quest][player.quests[quest]];
+  }
 
   ball = game.add.sprite(500, 350, 'ball');
   game.physics.p2.enable(ball);
   ball.body.damping = .4;
 
-  furryPatker = game.add.sprite(300, 300, 'furryPatker');
-  player.furryPatkerD = 0;
 
-  ogrePatker = game.add.sprite(600, 300, 'ogrePatker');
-  player.ogrePatkerD = 0;
+  furryPatker = new Character('Furry Patker', 'furryPatker', [300, 300]);
+  ogrePatker = new Character("Ogre Patker", 'ogrePatker', [600, 300]);
+  fancyPatker = new Character('Fancy Patker', 'fancyPatker', [450, 100]);
+  babyPatker = new Character('Baby Patker', 'babyPatker', [800, 50]);
 
-  fancyPatker = game.add.sprite(450, 100, 'fancyPatker');
-  player.fancyPatkerD = 0;
+  crazyPatker = new Character('Crazy Patker', 'crazyPatker', [900, 200]);
+  let idle = crazyPatker.sprite.animations.add('idle');
+  crazyPatker.sprite.animations.play('idle', 2, true);
+  //
+  // staticColliders = [furryPatker, ogrePatker, fancyPatker, crazyPatker, babyPatker];
 
-  babyPatker = game.add.sprite(800, 50, 'babyPatker');
-  player.babyPatkerD = 0;
-
-  crazyPatker = game.add.sprite(900, 200, 'crazyPatker');
-  let idle = crazyPatker.animations.add('idle');
-  crazyPatker.animations.play('idle', 2, true);
-  player.crazyPatkerD = 0;
-
-  staticColliders = [furryPatker, ogrePatker, fancyPatker, crazyPatker, babyPatker];
-  staticColliders.forEach(i => {
-    game.physics.p2.enable(i);
-    i.body.static = true;
-    player.body.createBodyCallback(i, function(){
-      player.collisions = [];
-      player.collisions.push(i)
-     }, this);
-  });
 
   player.body.onBeginContact.add((body) => {
     player.collisions.push(body);
@@ -223,17 +267,25 @@ function create(){
     player.collisions.splice(player.collisions.indexOf(body));
   }, this);
 
-  crazyPatker.body.createBodyCallback(ball, function(){
-    player.crazyPatkerD = 1;
-    crazyPatker.animations.stop('idle');
-    crazyPatker.loadTexture('crazyPatkerRestored');
+  crazyPatker.sprite.body.createBodyCallback(ball, function(){
+    crazyPatker.dialogue = 1;
+    crazyPatker.sprite.animations.stop('idle');
+    crazyPatker.sprite.loadTexture('crazyPatkerRestored');
   }, this);
 
   function tester(){
     console.log('menu submitted');
   }
 
-  mainMenu = new Menu({"Items": tester, "Quests": tester, "Stats": tester, "Nice": tester});
+  function listQuests(){
+    let quests = {};
+    Object.keys(player.quests).forEach(quest => {
+      quests[quest] = player.questGuide(quest);
+    });
+    const menuList = new List(quests);
+  }
+
+  mainMenu = new Menu({"Items": tester, "Quests": listQuests, "Stats": tester, "Nice": tester});
 
   dialogueText = game.add.text(10, 500, "", {fill: "#ffffff", align: "center"});
   dialogueText.fixedToCamera = true;
@@ -252,7 +304,6 @@ function create(){
 }
 
 function update(){
-  crazyPatker.body.width = 20;
   player.body.setZeroVelocity();
   player.body.angle = 0;
   player.vel = 200;
@@ -312,14 +363,14 @@ function update(){
       }
       else if(player.collisions.indexOf(fancyPatker) != -1){
         player.cutscene = true;
-        if(player.fancyPatkerD == 0){
+        if(fancyPatker.dialogue == 0){
           dialogueString(["It is I, Fancy Patker!", "Talk to me again, I have different dialogue!"], () => {
             player.cutscene = false;
             player.collisions = [];
-            player.fancyPatkerD = 1;
+            fancyPatker.dialogue = 1;
           });
         }
-        else if(player.fancyPatkerD == 1){
+        else if(fancyPatker.dialogue == 1){
           say("Huzzah!", () => {
             player.cutscene = false;
             player.collisions = [];
@@ -328,13 +379,13 @@ function update(){
       }
       else if(player.collisions.indexOf(crazyPatker) != -1){
         player.cutscene = true;
-        if(player.crazyPatkerD == 0){
+        if(crazyPatker.dialogue == 0){
           dialogueString(['Hit...', 'With...', 'Ball...'], () => {
             player.cutscene = false;
             player.collisiions = [];
           });
         }
-        else if(player.crazyPatkerD == 1){
+        else if(crazyPatker.dialogue == 1){
           dialogueString(['Oh! Thank Patker!', 'You have rescued me from the sp00ky ball curse!', 'How can I ever repay you!'], () => {
             player.cutscene = false;
             player.collisiions = [];
@@ -343,13 +394,13 @@ function update(){
       }
       else if(player.collisions.indexOf(babyPatker) != -1){
         player.cutscene = true;
-        if(player.crazyPatkerD == 0){
+        if(crazyPatker.dialogue == 0){
           dialogueString(["WAAAAAAAH!", "It is me, Baby Patker!", "You've got to help Crazy Patker over there!", "He's gone mega crazy!"], () => {
             player.cutscene = false;
             player.collisions = [];
           });
         }
-        else if(player.crazyPatkerD > 0){
+        else if(crazyPatker.dialogue > 0){
           dialogueString(["Oh! Thank you for saving Crazy Patker!", "I can't believe he was under the sp00ky ball curse!", "That sp00ky ball needs to be very destroyed.", "It cannot be allowed to sp00k other people!"], () => {
             player.cutscene = false;
             player.collisions = [];
