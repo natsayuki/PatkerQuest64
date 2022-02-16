@@ -1,0 +1,22 @@
+{
+  "name": "patkerquest64",
+  "version": "1.0.0",
+  "description": "",
+  "main": "phaser.min.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the42ndturtle/PatkerQuest64.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/the42ndturtle/PatkerQuest64/issues"
+  },
+  "homepage": "https://github.com/the42ndturtle/PatkerQuest64#readme",
+  "dependencies": {
+    "express": "^4.17.2"
+  }
+}
